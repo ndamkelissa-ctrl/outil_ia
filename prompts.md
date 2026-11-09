@@ -42,3 +42,31 @@
 - **Itération 1 (Prompt initial) :** "Crée un filtre pour afficher uniquement les tâches terminées."
 - **Itération 2 (Ajustement) :** "Modifie la fonction pour qu'elle accepte un paramètre de filtre ('toutes', 'à faire', 'terminées')."
 - **Itération 3 (Finalisation) :** "Optimise le code et ajoute la gestion des erreurs si le filtre saisi est invalide."
+
+## Séance 2 · Sprint 1 · Fonctions de base
+
+- **Outil :** Claude (chat)
+- **Prompt :** « Je suis en cybersécurité, suis toutes les étapes et fais JavaScript sans framework pour être dans les consignes » (avec le diaporama de la séance joint).
+- **Code produit :** `index.html`, `app.js` : créer, afficher, modifier, supprimer et terminer une tâche.
+- **Points relus :** titre vide refusé, id unique, affichage avec `textContent` au lieu de `innerHTML` pour éviter la faille XSS.
+- **Gardé / modifié / rejeté :** Gardé.
+- **Pourquoi :** Le code fonctionne quand je le teste dans le navigateur et je l'ai relu.
+
+## Séance 2 · Sprint 2 · Sauvegarde et mise en forme
+
+- **Outil :** Claude (chat)
+- **Prompt :** même conversation. Sauvegarde des tâches dans localStorage et feuille de style CSS.
+- **Code produit :** fonctions `save()` et `load()` dans `app.js`, `style.css`.
+- **Points relus :** `JSON.stringify` car localStorage ne stocke que du texte ; liste vide au premier lancement ; sauvegarde après chaque action. Les données ne sont pas privées : elles sont visibles avec F12.
+- **Gardé / modifié / rejeté :** Gardé.
+- **Pourquoi :** Les tâches restent bien affichées après avoir rechargé la page.
+
+## Séance 2 · Sprint 3 · Fonctionnalité cybersécurité
+
+- **Outil :** Claude (chat)
+- **Prompt :** même conversation. Écran de connexion et contrôle de robustesse du mot de passe.
+- **Code produit :** partie connexion à la fin de `app.js`, écran de connexion dans `index.html`, styles associés.
+- **Points relus :** mot de passe de 12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial ; mot de passe haché (PBKDF2) et jamais stocké en clair ; même message d'erreur si l'identifiant ou le mot de passe est faux ; blocage de 30 secondes après 5 échecs.
+- **Limites connues :** tout se passe dans le navigateur, donc la connexion peut être contournée avec F12 ; le blocage disparaît si on recharge la page.
+- **Gardé / modifié / rejeté :** Gardé.
+- **Pourquoi :** La connexion et le contrôle du mot de passe fonctionnent quand je les teste.
