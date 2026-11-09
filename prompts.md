@@ -68,5 +68,10 @@
 - **Code produit :** partie connexion à la fin de `app.js`, écran de connexion dans `index.html`, styles associés.
 - **Points relus :** mot de passe de 12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial ; mot de passe haché (SHA-256 avec un sel) et jamais stocké en clair ; même message d'erreur si l'identifiant ou le mot de passe est faux ; blocage de 30 secondes après 5 échecs.
 - **Limites connues :** tout se passe dans le navigateur, donc la connexion peut être contournée avec F12 ; le blocage disparaît si on recharge la page.
-- **Gardé / modifié / rejeté :** Gardé.
-- **Pourquoi :** La connexion et le contrôle du mot de passe fonctionnent quand je les teste.
+- **Gardé / modifié / rejeté :** Modifié.
+- **Pourquoi :** La première version faisait 340 lignes avec un hachage trop compliqué (PBKDF2) : on ne savait pas l'expliquer, donc on l'a refusée et on a demandé une version plus simple de moins de 200 lignes.
+
+## Corrections après nos tests
+
+- **Bug repéré :** une adresse e-mail était refusée comme identifiant. Trouvé en testant avec Live Server, corrigé en assouplissant la règle.
+- **Oubli repéré :** notre readme annonçait une date automatique pour chaque tâche, mais l'application ne l'affichait pas. Trouvé en comparant avec notre cahier des charges, date ajoutée.
