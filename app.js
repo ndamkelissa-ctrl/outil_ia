@@ -1,8 +1,10 @@
 // ===== TaskFlow : gestion des tâches =====
 // Sprint 1 : créer, afficher, modifier, supprimer, terminer
+// Sprint 2 : sauvegarde dans localStorage
 
 let tasks = [];
 let editingId = null;      // id de la tâche en cours de modification (null = aucune)
+const storageKey = "tasks"; // nom de la "case" dans localStorage
 
 const form = document.getElementById("task-form");
 const titleInput = document.getElementById("task-title");
@@ -15,6 +17,23 @@ const errorMessage = document.getElementById("task-error");
 // dans la même milliseconde : on ajoute une partie aléatoire.
 function createId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ---------- Sauvegarde (sprint 2) ----------
+
+// localStorage ne stocke que du texte : JSON.stringify transforme le tableau en texte.
+function save() {
+  localStorage.setItem(storageKey, JSON.stringify(tasks));
+}
+
+// Au premier lancement, getItem renvoie null : on part d'une liste vide.
+function load() {
+  const data = localStorage.getItem(storageKey);
+  try {
+    tasks = data ? JSON.parse(data) : [];
+  } catch {
+    tasks = []; // texte illisible (modifié à la main par exemple) : on repart à zéro
+  }
 }
 
 // ---------- Actions sur les tâches ----------
@@ -30,12 +49,14 @@ function addTask(title, priority = "moyenne") {
     statut: "a_faire",
   };
   tasks.push(task);
+  save();
   render();
   return task;
 }
 
 function deleteTask(id) {
   tasks = tasks.filter((task) => task.id !== id);
+  save();
   render();
 }
 
@@ -43,6 +64,7 @@ function toggleTask(id) {
   const task = tasks.find((t) => t.id === id);
   if (!task) return;
   task.statut = task.statut === "terminee" ? "a_faire" : "terminee";
+  save();
   render();
 }
 
@@ -52,6 +74,7 @@ function updateTask(id, newTitle) {
   if (!task || !cleanTitle) return false;
   task.titre = cleanTitle;
   editingId = null;
+  save();
   render();
   return true;
 }
@@ -142,5 +165,6 @@ form.addEventListener("submit", (event) => {
   titleInput.focus();
 });
 
-// Premier affichage au chargement de la page
+// Au chargement de la page : on récupère les tâches sauvegardées puis on les affiche
+load();
 render();
