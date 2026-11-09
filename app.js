@@ -1,10 +1,11 @@
 // ===== TaskFlow : gestion des tâches =====
 // Sprint 1 : créer, afficher, modifier, supprimer, terminer
 // Sprint 2 : sauvegarde dans localStorage
+// Sprint 3 : une liste de tâches séparée pour chaque utilisateur connecté
 
 let tasks = [];
 let editingId = null;      // id de la tâche en cours de modification (null = aucune)
-const storageKey = "tasks"; // nom de la "case" dans localStorage
+let storageKey = "tasks";  // devient "tasks_<identifiant>" après la connexion
 
 const form = document.getElementById("task-form");
 const titleInput = document.getElementById("task-title");
@@ -165,6 +166,260 @@ form.addEventListener("submit", (event) => {
   titleInput.focus();
 });
 
-// Au chargement de la page : on récupère les tâches sauvegardées puis on les affiche
-load();
-render();
+// Appelée par la partie connexion (plus bas) quand l'utilisateur est connecté
+function startApp(username) {
+  storageKey = "tasks_" + username;
+  editingId = null;
+  load();
+  render();
+}
+
+
+// ===== TaskFlow : connexion et robustesse du mot de passe (sprint 3, cybersécurité) =====
+//
+// LIMITE À CONNAÎTRE : tout se passe dans le navigateur. Une personne qui ouvre les
+// outils de développement (F12) peut contourner cet écran ou lire localStorage.
+// Une vraie authentification se fait sur un serveur. Ce code applique quand même
+// les bons réflexes : mot de passe jamais stocké en clair, critères de robustesse,
+// message d'erreur qui ne dit pas si c'est l'identifiant ou le mot de passe qui est faux,
+// blocage temporaire après plusieurs échecs.
+
+// Chaque règle est une fonction qui renvoie true si le mot de passe la respecte.
+const PASSWORD_RULES = {
+  length: (pwd) => pwd.length >= 12,          // 12 caractères minimum (recommandation CNIL / ANSSI)
+  upper: (pwd) => /[A-Z]/.test(pwd),
+  lower: (pwd) => /[a-z]/.test(pwd),
+  digit: (pwd) => /[0-9]/.test(pwd),
+  special: (pwd) => /[^A-Za-z0-9]/.test(pwd), // tout ce qui n'est ni lettre ni chiffre
+};
+const USERNAME_PATTERN = /^[A-Za-z0-9_.-]{3,30}$/;
+const ITERATIONS = 100000;     // nombre de tours de hachage (ralentit la force brute)
+const MAX_ATTEMPTS = 5;        // échecs autorisés avant blocage
+const LOCK_DURATION_MS = 30000; // durée du blocage : 30 secondes
+
+let mode = "login"; // "login" ou "register"
+let failedAttempts = 0;
+let lockedUntil = 0;
+
+const authScreen = document.getElementById("auth-screen");
+const appScreen = document.getElementById("app-screen");
+const authForm = document.getElementById("auth-form");
+const authTitle = document.getElementById("auth-title");
+const authSubmit = document.getElementById("auth-submit");
+const authMessage = document.getElementById("auth-message");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const rulesList = document.getElementById("password-rules");
+const strengthBox = document.getElementById("strength");
+const strengthBar = document.getElementById("strength-bar");
+const toggleModeButton = document.getElementById("toggle-mode");
+const currentUserLabel = document.getElementById("current-user");
+const logoutButton = document.getElementById("logout");
+
+// ---------- Robustesse du mot de passe ----------
+
+// Renvoie par exemple { length: true, upper: false, ... }
+function checkPassword(password) {
+  const results = {};
+  for (const [name, test] of Object.entries(PASSWORD_RULES)) {
+    results[name] = test(password);
+  }
+  return results;
+}
+
+function isStrongPassword(password) {
+  return Object.values(checkPassword(password)).every(Boolean);
+}
+
+// Coche les critères respectés et remplit la jauge
+function showPasswordRules(password) {
+  const results = checkPassword(password);
+  let score = 0;
+  for (const li of rulesList.querySelectorAll("li")) {
+    const ok = results[li.dataset.rule];
+    li.classList.toggle("ok", ok);
+    if (ok) score++;
+  }
+  const total = Object.keys(PASSWORD_RULES).length;
+  strengthBar.style.width = (score / total) * 100 + "%";
+  strengthBar.className = score <= 2 ? "weak" : score < total ? "medium" : "strong";
+}
+
+// ---------- Hachage du mot de passe ----------
+
+// Conversions entre octets et texte base64 (localStorage ne stocke que du texte)
+function toBase64(bytes) {
+  return btoa(String.fromCharCode(...bytes));
+}
+function fromBase64(text) {
+  return Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
+}
+
+// PBKDF2 avec SHA-256 : on hache le mot de passe 100 000 fois avec un "sel" aléatoire.
+// - Le hachage est à sens unique : on ne peut pas retrouver le mot de passe à partir du hash.
+// - Le sel fait que deux utilisateurs avec le même mot de passe ont des hash différents.
+// - Les nombreuses itérations rendent chaque essai d'un attaquant plus lent.
+async function hashPassword(password, salt) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: ITERATIONS, hash: "SHA-256" }, key, 256
+  );
+  return toBase64(new Uint8Array(bits));
+}
+
+// ---------- Comptes ----------
+
+// Les comptes sont stockés sous forme de tableau : [{ username, salt, hash }, ...]
+function getUsers() {
+  try {
+    const users = JSON.parse(localStorage.getItem("users"));
+    return Array.isArray(users) ? users : [];
+  } catch {
+    return [];
+  }
+}
+
+// Renvoie un message d'erreur, ou null si le compte a bien été créé
+async function register(username, password) {
+  const users = getUsers();
+  if (users.some((user) => user.username === username)) {
+    return "Cet identifiant est déjà utilisé.";
+  }
+  if (!isStrongPassword(password)) {
+    return "Le mot de passe ne respecte pas tous les critères.";
+  }
+  const salt = crypto.getRandomValues(new Uint8Array(16)); // sel aléatoire de 16 octets
+  const hash = await hashPassword(password, salt);
+  users.push({ username, salt: toBase64(salt), hash });   // le mot de passe lui-même n'est jamais enregistré
+  localStorage.setItem("users", JSON.stringify(users));
+  return null;
+}
+
+// Renvoie true si l'identifiant et le mot de passe sont corrects
+async function login(username, password) {
+  const user = getUsers().find((u) => u.username === username);
+  if (!user) {
+    // On calcule quand même un hash pour que la réponse prenne le même temps
+    // que l'identifiant existe ou non (sinon un attaquant pourrait le deviner).
+    await hashPassword(password, new Uint8Array(16));
+    return false;
+  }
+  const hash = await hashPassword(password, fromBase64(user.salt));
+  return hash === user.hash;
+}
+
+// ---------- Écrans ----------
+
+function setMode(newMode) {
+  mode = newMode;
+  const isRegister = mode === "register";
+  authTitle.textContent = isRegister ? "Créer un compte" : "Connexion";
+  authSubmit.textContent = isRegister ? "Créer mon compte" : "Se connecter";
+  toggleModeButton.textContent = isRegister
+    ? "Déjà un compte ? Se connecter"
+    : "Pas encore de compte ? Créer un compte";
+  passwordInput.setAttribute("autocomplete", isRegister ? "new-password" : "current-password");
+  rulesList.hidden = !isRegister;
+  strengthBox.hidden = !isRegister;
+  authMessage.textContent = "";
+  showPasswordRules(passwordInput.value);
+}
+
+function openApp(username) {
+  sessionStorage.setItem("currentUser", username); // la session s'arrête à la fermeture de l'onglet
+  authForm.reset();
+  authScreen.hidden = true;
+  appScreen.hidden = false;
+  currentUserLabel.textContent = username;
+  startApp(username); // fonction définie plus haut dans ce fichier
+}
+
+function logout() {
+  sessionStorage.removeItem("currentUser");
+  appScreen.hidden = true;
+  authScreen.hidden = false;
+  setMode("login");
+  usernameInput.focus();
+}
+
+// ---------- Événements ----------
+
+passwordInput.addEventListener("input", () => {
+  if (mode === "register") showPasswordRules(passwordInput.value);
+});
+
+toggleModeButton.addEventListener("click", () => {
+  setMode(mode === "login" ? "register" : "login");
+});
+
+logoutButton.addEventListener("click", logout);
+
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+  authMessage.textContent = "";
+
+  if (!USERNAME_PATTERN.test(username)) {
+    authMessage.textContent = "L'identifiant doit contenir 3 à 30 caractères : lettres, chiffres, point, tiret ou tiret bas.";
+    return;
+  }
+
+  if (mode === "register") {
+    authSubmit.disabled = true;
+    const error = await register(username, password);
+    authSubmit.disabled = false;
+    if (error) {
+      authMessage.textContent = error;
+      return;
+    }
+    openApp(username);
+    return;
+  }
+
+  // Mode connexion : blocage temporaire après trop d'échecs
+  if (Date.now() < lockedUntil) {
+    const seconds = Math.ceil((lockedUntil - Date.now()) / 1000);
+    authMessage.textContent = `Trop de tentatives. Réessayez dans ${seconds} s.`;
+    return;
+  }
+
+  authSubmit.disabled = true;
+  const ok = await login(username, password);
+  authSubmit.disabled = false;
+
+  if (ok) {
+    failedAttempts = 0;
+    openApp(username);
+    return;
+  }
+
+  failedAttempts++;
+  if (failedAttempts >= MAX_ATTEMPTS) {
+    lockedUntil = Date.now() + LOCK_DURATION_MS;
+    failedAttempts = 0;
+    authMessage.textContent = "Trop de tentatives. Réessayez dans 30 s.";
+  } else {
+    // Même message dans les deux cas : on ne révèle pas si l'identifiant existe
+    authMessage.textContent = "Identifiant ou mot de passe incorrect.";
+  }
+});
+
+// ---------- Démarrage ----------
+
+document.addEventListener("DOMContentLoaded", () => {
+  // crypto.subtle n'existe que sur une page "sécurisée" (https ou localhost)
+  if (!window.crypto?.subtle) {
+    authMessage.textContent = "Ouvrez TaskFlow avec Live Server (adresse http://localhost ou http://127.0.0.1) pour activer la connexion.";
+    authSubmit.disabled = true;
+    return;
+  }
+  const savedUser = sessionStorage.getItem("currentUser");
+  if (savedUser && getUsers().some((u) => u.username === savedUser)) {
+    openApp(savedUser);
+  } else {
+    setMode("login");
+  }
+});

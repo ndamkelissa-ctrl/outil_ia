@@ -7,9 +7,42 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main id="app-screen" class="card">
+  <!-- Écran de connexion (sprint 3) -->
+  <main id="auth-screen" class="card">
+    <h1>TaskFlow</h1>
+    <p class="subtitle" id="auth-title">Connexion</p>
+
+    <form id="auth-form" novalidate>
+      <label for="username">Identifiant</label>
+      <input id="username" type="text" autocomplete="username" maxlength="30" required>
+
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+
+      <div id="strength" class="strength" hidden><div id="strength-bar"></div></div>
+      <ul id="password-rules" class="rules" hidden>
+        <li data-rule="length">Au moins 12 caractères</li>
+        <li data-rule="upper">Une majuscule</li>
+        <li data-rule="lower">Une minuscule</li>
+        <li data-rule="digit">Un chiffre</li>
+        <li data-rule="special">Un caractère spécial (! ? @ # …)</li>
+      </ul>
+
+      <p id="auth-message" class="message" role="alert"></p>
+      <button type="submit" id="auth-submit">Se connecter</button>
+    </form>
+
+    <button type="button" id="toggle-mode" class="link">Pas encore de compte ? Créer un compte</button>
+  </main>
+
+  <!-- Application (sprints 1 et 2) -->
+  <main id="app-screen" class="card" hidden>
     <header class="app-header">
       <h1>TaskFlow</h1>
+      <div class="user">
+        <span id="current-user"></span>
+        <button type="button" id="logout" class="secondary">Se déconnecter</button>
+      </div>
     </header>
 
     <form id="task-form">
