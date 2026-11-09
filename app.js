@@ -18,7 +18,7 @@ function load() {
 // ========== SPRINT 1 : LES TÂCHES ==========
 function addTask(title, priority) {
   if (title.trim() === "") return false; // refuse un titre vide
-  tasks.push({ id: Date.now(), titre: title.trim(), priorite: priority, terminee: false });
+   tasks.push({ id: Date.now(), titre: title.trim(), priorite: priority, terminee: false, date: new Date().toLocaleDateString("fr-FR") });
   save(); render();
   return true;
 }
@@ -66,7 +66,7 @@ function render() {
     checkbox.onchange = () => toggleTask(task.id);
     const title = document.createElement("span");
     title.className = "title";
-    title.textContent = task.titre; // textContent et pas innerHTML : protège contre la faille XSS
+        title.textContent = task.titre + (task.date ? " (" + task.date + ")" : ""); // textContent : protège contre la faille XSS
     const editButton = makeButton("Modifier", "secondary", () => editTask(task.id));
     const deleteButton = makeButton("Supprimer", "danger", () => deleteTask(task.id));
     li.append(checkbox, title, editButton, deleteButton);
