@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskFlow</title>
+</head>
+<body>
+  <main id="app-screen" class="card">
+    <header class="app-header">
+      <h1>TaskFlow</h1>
+    </header>
+
+    <form id="task-form">
+      <input id="task-title" type="text" placeholder="Nouvelle tâche" maxlength="100" aria-label="Titre de la tâche">
+      <select id="task-priority" aria-label="Priorité">
+        <option value="basse">Basse</option>
+        <option value="moyenne" selected>Moyenne</option>
+        <option value="haute">Haute</option>
+      </select>
+      <button type="submit">Ajouter</button>
+    </form>
+    <p id="task-error" class="message" role="alert"></p>
+
+    <ul id="task-list"></ul>
+    <p id="empty" class="empty">Aucune tâche. Ajoutez-en une ci-dessus.</p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
