@@ -1,0 +1,134 @@
+/* ===== TaskFlow : mise en forme (sprint 2) ===== */
+
+/* Couleurs regroupées en variables : on les change à un seul endroit */
+:root {
+  --bg: #e9eef4;
+  --surface: #ffffff;
+  --text: #1b2a3a;
+  --muted: #5d6b7a;
+  --border: #cfd8e2;
+  --accent: #2f5bea;
+  --danger: #c0392b;
+  --prio-basse: #3c9d6b;
+  --prio-moyenne: #d99a1e;
+  --prio-haute: #d0453a;
+}
+
+/* Thème sombre automatique si l'ordinateur est réglé en mode sombre */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131a22;
+    --surface: #1c2631;
+    --text: #e6edf3;
+    --muted: #9aa8b6;
+    --border: #2f3d4b;
+    --accent: #6f8ff5;
+    --danger: #ef6b5e;
+  }
+}
+
+[hidden] { display: none !important; } /* garantit que l'attribut hidden masque toujours */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+.card {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Champs et boutons ---------- */
+
+input[type="text"], input[type="password"], select {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.08); }
+button:disabled { opacity: 0.5; cursor: wait; }
+button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
+button.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.message { min-height: 1.5em; margin: 0.5rem 0; color: var(--danger); font-size: 0.9rem; }
+
+/* ---------- Liste des tâches ---------- */
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+#task-form { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+#task-title { flex: 1 1 14rem; }
+
+#task-list { list-style: none; margin: 0; padding: 0; }
+
+/* La priorité se lit d'un coup d'œil grâce à la bordure gauche colorée */
+.task {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--border);
+  border-radius: 8px;
+}
+.task.prio-basse { border-left-color: var(--prio-basse); }
+.task.prio-moyenne { border-left-color: var(--prio-moyenne); }
+.task.prio-haute { border-left-color: var(--prio-haute); }
+
+.task input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--accent); }
+.task .title, .task .edit-input { flex: 1 1 10rem; overflow-wrap: anywhere; }
+.task button { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+
+.badge { color: var(--muted); font-size: 0.85rem; }
+
+.task.done .title { text-decoration: line-through; color: var(--muted); }
+
+.empty { color: var(--muted); text-align: center; padding: 1.5rem 0; }
+
+@media (max-width: 480px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 1.25rem; }
+}
